@@ -4,16 +4,17 @@ FROM ${BUILD_FROM}
 
 ARG BUILD_VERSION=dev
 ARG BUILD_ARCH
+ARG VCLIENT_TIMEOUT=40
 LABEL \
     io.hass.version="${BUILD_VERSION}" \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.type="addon" \
     io.hass.name="Vcontrol add-on" \
     io.hass.description="MQTT bridge for Viessmann vcontrold" \
-    io.hass.url="https://github.com/Alexandre-io/homeassistant-vcontrol" \
+    io.hass.url="https://github.com/adrien3287/homeassistant-vcontrol" \
     org.opencontainers.image.title="Home Assistant Add-on: Vcontrol add-on" \
     org.opencontainers.image.description="MQTT bridge for Viessmann vcontrold." \
-    org.opencontainers.image.source="https://github.com/Alexandre-io/homeassistant-vcontrol" \
+    org.opencontainers.image.source="https://github.com/adrien3287/homeassistant-vcontrol" \
     org.opencontainers.image.licenses="Apache-2.0"
 
 ENV VCONTROLD_VERSION="v0.98.12"
@@ -28,6 +29,8 @@ RUN \
         libxml2-dev \
         mosquitto-clients && \
     git clone --depth 1 --branch "${VCONTROLD_VERSION}" https://github.com/openv/vcontrold.git /tmp/vcontrold && \
+    sed -i "s/^#define CL_TIMEOUT 25$/#define CL_TIMEOUT ${VCLIENT_TIMEOUT}/" /tmp/vcontrold/src/client.h && \
+    grep -q "^#define CL_TIMEOUT ${VCLIENT_TIMEOUT}$" /tmp/vcontrold/src/client.h && \
     cmake -S /tmp/vcontrold -B /tmp/vcontrold/build -DMANPAGES=OFF && \
     cmake --build /tmp/vcontrold/build --parallel "$(nproc)" && \
     cmake --install /tmp/vcontrold/build && \
