@@ -1,5 +1,10 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
+## 1.14.1
+
+- Personal fork: increase the upstream vclient response timeout from 25 to 40 seconds
+- Build the add-on locally from this fork instead of pulling Alexandre-io's published image
+
 ## 1.14.0
 
 - Recover from MQTT service unavailability and broker restarts without halting the entire extension
