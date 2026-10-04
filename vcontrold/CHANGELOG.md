@@ -1,5 +1,12 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
+## 1.15.1
+
+- Add optional per-command polling intervals with `command:TYPE:SECONDS`
+- Batch commands sharing an interval while scheduling groups independently
+- Keep legacy `command:TYPE` entries on the global `refresh` interval
+- Preserve the personal fork's 40-second vclient response timeout and local build setup
+
 ## 1.14.1
 
 - Personal fork: increase the upstream vclient response timeout from 25 to 40 seconds
