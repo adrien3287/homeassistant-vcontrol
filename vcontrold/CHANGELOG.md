@@ -1,5 +1,11 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
+## 1.15.0
+
+- Allow an optional per-command polling interval with `command:TYPE:SECONDS`
+- Batch commands that share an interval while scheduling polling groups independently
+- Keep existing `command:TYPE` configurations fully compatible with the global `refresh` value
+
 ## 1.14.0
 
 - Recover from MQTT service unavailability and broker restarts without halting the entire extension
