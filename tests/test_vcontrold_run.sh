@@ -16,21 +16,21 @@ mkdir -p \
     "${tmp_dir}/legacy-config" \
     "${tmp_dir}/run"
 
-cat > "${tmp_dir}/etc/vcontrold/vcontrold.xml" <<'EOF'
+cat > "${tmp_dir}/etc/vcontrold/vcontrold.xml" <<'XML'
 <config debug="#DEBUG#" device="#DEVICEID#">
   <xi:include href="#VITOXML#" />
 </config>
-EOF
+XML
 
-cat > "${tmp_dir}/etc/vcontrold/vito.xml" <<'EOF'
+cat > "${tmp_dir}/etc/vcontrold/vito.xml" <<'XML'
 <vito />
-EOF
+XML
 
-cat > "${tmp_dir}/bin/mock-vcontrold" <<'EOF'
+cat > "${tmp_dir}/bin/mock-vcontrold" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$@" > "${TEST_CAPTURE_DIR}/vcontrold-args.txt"
-EOF
+SH
 chmod +x "${tmp_dir}/bin/mock-vcontrold"
 
 (
@@ -47,7 +47,7 @@ chmod +x "${tmp_dir}/bin/mock-vcontrold"
     export BASHIO_CONFIG_tty="${TEST_TTY:-/dev/null}"
     export BASHIO_CONFIG_device_id="2098"
     export BASHIO_CONFIG_refresh="60"
-    export BASHIO_CONFIG_commands=$'getTempA:FLOAT\ngetError0:STRING\ngetTempWWsoll:FLOAT'
+    export BASHIO_CONFIG_commands=$'getTempA:FLOAT:5\ngetError0:STRING:300\ngetTempWWsoll:FLOAT:5\ngetPumpeStatusM1:FLOAT'
     export BASHIO_CONFIG_mqtt_topic="openv"
     export BASHIO_CONFIG_mqtt_host="mqtt.local"
     export BASHIO_CONFIG_debug="false"
@@ -55,15 +55,27 @@ chmod +x "${tmp_dir}/bin/mock-vcontrold"
     source "${repo_root}/vcontrold/rootfs/etc/services.d/vcontrold/run" > "${tmp_dir}/run.log" 2>&1
 )
 
-assert_file_exists "${tmp_dir}/run/1_mqtt_commands.txt"
+assert_file_exists "${tmp_dir}/run/poll_groups.txt"
 assert_eq \
-    $'getTempA\ngetError0\ngetTempWWsoll' \
-    "$(cat "${tmp_dir}/run/1_mqtt_commands.txt")" \
-    "generated runtime command list"
-assert_file_contains "${tmp_dir}/run/2_mqtt.tmpl" '$C3'
-assert_file_contains "${tmp_dir}/run/2_mqtt.tmpl" '$1'
-assert_file_contains "${tmp_dir}/run/2_mqtt.tmpl" '$R2'
-assert_file_contains "${tmp_dir}/run/2_mqtt.tmpl" '$3'
+    $'5\n60\n300' \
+    "$(cat "${tmp_dir}/run/poll_groups.txt")" \
+    "generated polling groups"
+assert_eq \
+    $'getTempA\ngetTempWWsoll' \
+    "$(cat "${tmp_dir}/run/poll.d/5.commands")" \
+    "fast command group"
+assert_eq \
+    'getPumpeStatusM1' \
+    "$(cat "${tmp_dir}/run/poll.d/60.commands")" \
+    "legacy default command group"
+assert_eq \
+    'getError0' \
+    "$(cat "${tmp_dir}/run/poll.d/300.commands")" \
+    "slow command group"
+assert_file_contains "${tmp_dir}/run/poll.d/5.tmpl" '$C2'
+assert_file_contains "${tmp_dir}/run/poll.d/5.tmpl" '$1'
+assert_file_contains "${tmp_dir}/run/poll.d/5.tmpl" '$2'
+assert_file_contains "${tmp_dir}/run/poll.d/300.tmpl" '$R1'
 assert_file_contains "${tmp_dir}/run/vcontrold.xml" 'device="2098"'
 assert_file_contains "${tmp_dir}/run/vcontrold.xml" "href=\"${tmp_dir}/etc/vcontrold/vito.xml\""
 assert_file_contains "${tmp_dir}/capture/vcontrold-args.txt" "${tmp_dir}/run/vcontrold.xml"

@@ -1,5 +1,12 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
+## 1.15.0
+
+- Add optional per-command polling intervals using `command:TYPE:SECONDS`
+- Group commands with the same interval into a single vclient read cycle
+- Keep existing `command:TYPE` entries on the global `refresh` interval for backward compatibility
+- Schedule shorter polling groups independently so slow/static commands no longer stretch every fast cycle
+
 ## 1.14.0
 
 - Recover from MQTT service unavailability and broker restarts without halting the entire extension

@@ -235,7 +235,7 @@ class RuntimeTests(unittest.TestCase):
         self.write_options()
         result = self.run_script("vcontrold/run", env={"TAIL_BIN": "/bin/true"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(Path("/run/vcontrold/1_mqtt_commands.txt").read_text(), "getTempA\n")
+        self.assertEqual(Path("/run/vcontrold/poll.d/1.commands").read_text(), "getTempA\n")
 
 
 if __name__ == "__main__":

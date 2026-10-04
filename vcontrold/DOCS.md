@@ -18,7 +18,7 @@ In the configuration section, you have 2 choices to connect to your **Vitodens**
 1. For a locally connected **Optolink** cable, set the USB/TTY device. The add-on will pass through that USB port and run **vcontrold** locally inside Docker.
 2. For a remotely running **vcontrold** (e.g. RPi connected to your **Vitodens** device), select its hostname and port (_Vcontrold host/port_). These settings are by default set to localhost:3002.
 
-Select a _refresh rate_ that defines the interval used for polling your device and the _device id_ (typically also seen in the device identifier string) which is used to select the correct mapping for the commands that are executed.
+Select a _refresh rate_ that defines the default interval used for polling commands without their own interval and the _device id_ (typically also seen in the device identifier string) which is used to select the correct mapping for the commands that are executed.
  
 
 The commands section can be edited and extended in YAML mode, e.g.
@@ -72,8 +72,23 @@ commands:
   - getTimerWWMo:STRING
 ```
 
-Each list entry uses the format `command:TYPE`.
-Use `FLOAT` for numeric values and `STRING` for text payloads such as error codes, timer definitions, or string-like status values that should stay strings in MQTT clients.
+Each list entry uses `command:TYPE` or the optional `command:TYPE:INTERVAL_SECONDS` format.
+Use `FLOAT` for numeric values and `STRING` for text payloads such as error codes, timer definitions, or string-like status values that should stay strings in MQTT clients. `INTERVAL_SECONDS` must be between 1 and 86400. If it is omitted, the global `refresh` value is used, so existing configurations keep their current behavior. Commands with the same interval are grouped into a single vclient read cycle.
+
+For example, fast temperatures can be separated from counters, errors, and timer definitions:
+```yaml
+refresh: 30
+commands:
+  - getTempKist:FLOAT:5
+  - getTempWWist:FLOAT:5
+  - getTempA:FLOAT:60
+  - getBrennerStarts:FLOAT:300
+  - getError0:STRING:900
+  - getTimerWWMo:STRING:3600
+  - getPumpeStatusM1:FLOAT  # uses refresh: 30
+```
+
+Each interval is scheduled independently after its previous read completes. The scheduler re-checks shorter intervals between groups, so a long/slow group does not permanently stretch the fast polling loop.
 
 ### Integration into Home Assistant
 To create entities in Home Assistant, you need to configure MQTT sensors - short example with getters and setters (taken from https://github.com/Alexandre-io/homeassistant-vcontrol/issues/7):
@@ -139,7 +154,7 @@ original XML files are never rewritten.
   **Settings → System → Hardware**. `/dev/ttyUSB0` can identify a different adapter
   after a host reboot. The extension waits for a missing local serial device and
   retries daemon failures. Network serial endpoints (`host:port`) remain supported.
-- `refresh` is the delay between completed read cycles (1–86400 seconds).
+- `refresh` is the default delay after a completed read cycle (1–86400 seconds). A command can override it with `command:TYPE:INTERVAL_SECONDS`; commands sharing an interval are read together and each interval group is scheduled independently.
   `command_timeout` limits a whole vcontrold read cycle or one setter (1–3600 seconds,
   default 120). Increase it if a large command list or slow device needs more time.
   MQTT publications have a separate 10-second timeout, followed by forced termination
